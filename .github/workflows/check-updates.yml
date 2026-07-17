@@ -1,0 +1,45 @@
+name: "Check source updates"
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * 1'   # every Monday at 02:00 UTC
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    name: "Check upstream versions"
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 1
+
+      - name: "Fetch and compare upstream versions"
+        id: versions
+        run: bash scripts/check-sources.sh
+
+      - name: "Update source-pins.json"
+        if: env.HAS_UPDATE == 'true'
+        run: |
+          jq -n \
+            --arg moto  "$CHECK_MOTO_SUB" \
+            --arg ksun  "$CHECK_KSUN_TAG" \
+            --arg resuki  "$CHECK_RESUKI_COMMIT" \
+            '{
+              moto_sublevel: $moto,
+              ksun_tag:      $ksun,
+              resuki_commit:      $resuki
+            }' > sources/source-pins.json
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add sources/source-pins.json
+          git commit -m "chore: update source-pins.json [skip ci]"
+          git push

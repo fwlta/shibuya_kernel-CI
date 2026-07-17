@@ -1,0 +1,17 @@
+name: setup-configs
+description: Configure the selected root variant
+
+inputs:
+  ksu_type:
+    required: true
+  defconfig:
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        KSU_TYPE: ${{ inputs.ksu_type }}
+        DEFCONFIG: ${{ inputs.defconfig }}
+      run: bash ${{ github.workspace }}/scripts/setup-configs.sh
