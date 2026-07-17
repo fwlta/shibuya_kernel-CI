@@ -1,0 +1,125 @@
+name: "Release"
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+
+on:
+  workflow_call:
+    inputs:
+      variant:    { type: string, required: true }   # all | KSU-Next | ReSukiSU | NoKSU
+      zip_mode:   { type: string, required: true }   # per-variant | aio
+      build_type: { type: string, required: true }   # stable | testing
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: "Release"
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 1
+
+      - name: "Download artifacts"
+        uses: actions/download-artifact@v4.3.0
+        with:
+          path: ./artifacts/
+
+      - name: "Resolve versions"
+        run: bash scripts/resolve-versions.sh
+        env:
+          BUILD_TYPE: ${{ inputs.build_type }}
+          GITHUB_TOKEN:  ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "Package ZIPs"
+        env:
+          ZIP_MODE:   ${{ inputs.zip_mode }}
+          BUILD_TYPE: ${{ inputs.build_type }}
+        run: bash scripts/pack-release.sh
+
+      - name: "Fetch manager APKs"
+        env:
+          GITHUB_TOKEN:              ${{ secrets.GITHUB_TOKEN }}
+          KSUN_MANAGER_ARTIFACT_ID:  ${{ env.KSUN_MANAGER_ARTIFACT_ID }}
+          RESUKI_MANAGER_ARTIFACT_ID:  ${{ env.RESUKI_MANAGER_ARTIFACT_ID }}
+          KSUN_VERSION:              ${{ env.KSUN_VERSION }}
+          RESUKI_VERSION:              ${{ env.RESUKI_VERSION }}
+        run: bash scripts/fetch-manager-apks.sh
+
+      - name: "Generate release notes"
+        env:
+          BUILD_TYPE:  ${{ inputs.build_type }}
+          RUN_URL:     "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          REPO:        ${{ github.repository }}
+          SHA:         ${{ github.sha }}
+          RUN_NUMBER:  ${{ github.run_number }}
+        run: bash scripts/release-notes.sh
+
+      - name: "Remove old assets"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SELECTED_VARIANT: ${{ inputs.variant }}
+        run: |
+          case "$SELECTED_VARIANT" in
+            KSU-Next) asset_pattern="^Shibuya-[0-9a-f]+-ksun\.zip$|^shibuya-.*-KSU-Next-" ;;
+            ReSukiSU)   asset_pattern="^Shibuya-[0-9a-f]+-resuki\.zip$|^shibuya-.*-ReSukiSU-" ;;
+            NoKSU)    asset_pattern="^Shibuya-[0-9a-f]+-noksu\.zip$|^shibuya-.*-NoKSU-" ;;
+            *)        asset_pattern="^(AK3|schizo|shibuya|Shibuya)-" ;;
+          esac
+
+          gh release view "$RELEASE_TAG" --json assets \
+            -q '.assets[].name' 2>/dev/null \
+            | grep -E "$asset_pattern" \
+            | xargs -r -I{} gh release delete-asset \
+                "$RELEASE_TAG" {} --yes 2>/dev/null || true        
+        
+      - name: "Publish release"
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          overwrite: true  
+          files: |
+            ./release_zips/*.zip
+            ./manager_apks/*.apk
+          tag_name:   ${{ env.RELEASE_TAG }}
+          name:       ${{ env.RELEASE_NAME }}
+          prerelease: ${{ env.IS_PRERELEASE }}
+          body:       ${{ env.RELEASE_BODY }}
+
+      - name: "Send ZIPs to Telegram"
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:   ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          set -euo pipefail
+          : "${TELEGRAM_BOT_TOKEN:?Missing TELEGRAM_BOT_TOKEN}"
+          : "${TELEGRAM_CHAT_ID:?Missing TELEGRAM_CHAT_ID}"
+
+
+          for zip in ./release_zips/*.zip; do
+            [ -f "$zip" ] || continue
+            filename="$(basename "$zip")"
+            sha256="$(sha256sum "$zip" | cut -d' ' -f1)"
+            case "$filename" in
+              *-ksun.zip)  variant="KSU-Next" ;;
+              *-resuki.zip)  variant="ReSukiSU" ;;
+              *-noksu.zip) variant="NoKSU" ;;
+              *KSU-Next*) variant="KSU-Next" ;;
+              *ReSukiSU*)   variant="ReSukiSU" ;;
+              *NoKSU*)    variant="NoKSU" ;;
+              *)          variant="Kernel" ;;
+            esac
+            caption="$(printf "<b>Download Shibuya-Kernel-%s #%s</b>\n\n<blockquote>[ ] Test</blockquote>\n\nSHA256: <code>%s</code>" "$variant" "$GITHUB_RUN_NUMBER" "$sha256")"
+            curl --fail --silent --show-error --retry 3 \
+              --output /dev/null \
+              --form "chat_id=${TELEGRAM_CHAT_ID}" \
+              --form "document=@${zip}" \
+              --form "parse_mode=HTML" \
+              --form-string "caption=${caption}" \
+              "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument"
+          done

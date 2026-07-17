@@ -1,0 +1,89 @@
+name: "Build kernels"
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+
+on:
+  schedule:
+    - cron: '0 0 */5 * *'   # every 5 days — keeps GHA cache alive (evicts at 7d)
+  workflow_dispatch:
+    inputs:
+      variant:
+        description: "Kernel variant"
+        type: choice
+        options:
+          - all
+          - KSU-Next
+          - ReSukiSU
+          - NoKSU
+        default: all
+      zip_mode:
+        description: "ZIP packaging"
+        type: choice
+        options: [per-variant, aio, both]
+        default: per-variant
+      build_type:
+        description: "Build type"
+        type: choice
+        options: [stable, testing]
+        default: stable
+
+permissions:
+  contents: write
+
+jobs:
+
+  select:
+    name: "Select variants"
+    runs-on: ubuntu-latest
+    outputs:
+      variants: ${{ steps.matrix.outputs.variants }}
+    steps:
+      - id: matrix
+        env:
+          SELECTED_VARIANT: ${{ inputs.variant || 'all' }}
+        run: |
+          ksun='{"name":"Moto KSU-Next","source":"moto","ksu":"ksun","artifact":"moto-ksun","defconfig":"gki_defconfig","clo_fragment":"vendor/kalama_GKI.config"}'
+          resuki='{"name":"Moto ReSukiSU","source":"moto","ksu":"resuki","artifact":"moto-resuki","defconfig":"gki_defconfig","clo_fragment":"vendor/kalama_GKI.config"}'
+          noksu='{"name":"Moto NoKSU","source":"moto","ksu":"none","artifact":"moto-noksu","defconfig":"gki_defconfig","clo_fragment":"vendor/kalama_GKI.config"}'
+
+          case "$SELECTED_VARIANT" in
+            KSU-Next) variants="[$ksun]" ;;
+            ReSukiSU)    variants="[$resuki]" ;;
+            NoKSU)     variants="[$noksu]" ;;
+            all)       variants="[$ksun,$resuki,$noksu]" ;;
+            *)         echo "Unknown variant: $SELECTED_VARIANT" >&2; exit 1 ;;
+          esac
+
+          echo "variants=$variants" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: "${{ matrix.variant.name }}"
+    needs: select
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: ${{ fromJSON(needs.select.outputs.variants) }}
+
+    uses: ./.github/workflows/build-kernel.yml
+    with:
+      variant_name:  ${{ matrix.variant.name }}
+      source_type:   ${{ matrix.variant.source }}
+      ksu_type:      ${{ matrix.variant.ksu }}
+      artifact_name: ${{ matrix.variant.artifact }}
+      defconfig:     ${{ matrix.variant.defconfig }}
+      clo_fragment:  ${{ matrix.variant.clo_fragment || '' }}
+      build_type:    ${{ inputs.build_type || 'stable' }}
+    secrets: inherit
+
+  release:
+    name: "Release"
+    needs: build
+    if: success() && github.event_name != 'schedule'
+    uses: ./.github/workflows/release.yml
+    with:
+      variant:    ${{ inputs.variant || 'all' }}
+      zip_mode:   ${{ inputs.variant == 'all' && (inputs.zip_mode || 'per-variant') || 'per-variant' }}
+      build_type: ${{ inputs.build_type || 'stable' }}
+    secrets: inherit
