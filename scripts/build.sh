@@ -112,8 +112,11 @@ KERNEL_HASH="$(cat "${WORK_DIR}/kernel_hash.txt")"
   echo "[ERROR] Invalid kernel hash: $KERNEL_HASH"
   exit 1
 }
-echo "[${SOURCE_TYPE^^}] Setting LocalVersion: :shibuya:${KERNEL_HASH}"
-./scripts/config --file "${OUT_DIR}/dist/.config" --set-str LOCALVERSION ":shibuya:${KERNEL_HASH}" -d LOCALVERSION_AUTO
+KERNEL_LOCALVERSION=":shibuya-purity/${KERNEL_HASH}"
+echo "[${SOURCE_TYPE^^}] Setting LocalVersion: ${KERNEL_LOCALVERSION}"
+./scripts/config --file "${OUT_DIR}/dist/.config" \
+  --set-str LOCALVERSION "${KERNEL_LOCALVERSION}" \
+  -d LOCALVERSION_AUTO
 make "${MAKE_FLAGS[@]}" olddefconfig
 
 echo "[${SOURCE_TYPE^^}] Generating SELinux headers..."
