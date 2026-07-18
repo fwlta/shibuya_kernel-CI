@@ -3,7 +3,7 @@
 Custom Linux 5.15.202 kernel for the Motorola Edge 40 Pro (`rtwo`).
 
 ```text
-5.15.xxx:shibuya:<hash>
+5.15.202:shibuya-purity/<commit>
 ```
 
 The suffix identifies the exact kernel source commit used by each build.

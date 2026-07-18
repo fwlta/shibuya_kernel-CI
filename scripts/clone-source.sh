@@ -42,11 +42,10 @@ printf "%s\n" "$KERNEL_HASH" > "${WORK_DIR}/kernel_hash.txt"
 echo "KERNEL_HASH=$KERNEL_HASH" >> "${GITHUB_ENV:-/dev/null}"
 
 
-rm -f "$KERNEL_SRC/.scmversion"
-(
-  cd "$KERNEL_SRC"
-  ./scripts/setlocalversion --save-scmversion .
-)
+# Freeze the exact source revision used by this build. This runs before
+# Kconfig is available, so setlocalversion would miss LOCALVERSION_SHA and
+# fall back to the generic SCM suffix.
+printf "/%s\\n" "$KERNEL_HASH" > "$KERNEL_SRC/.scmversion"
 
 echo "[OK] Source cloned → $KERNEL_SRC"
 echo "KERNEL_SRC=$KERNEL_SRC" >> "${GITHUB_ENV:-/dev/null}"
