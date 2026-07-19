@@ -1,0 +1,152 @@
+name: "Build kernel"
+
+on:
+  workflow_call:
+    inputs:
+      variant_name:  { type: string, required: true }
+      source_type:   { type: string, required: true }   # moto
+      ksu_type:      { type: string, required: true }   # ksun | ksun-susfs | resuki | resuki-susfs | none
+      artifact_name: { type: string, required: true }
+      defconfig:     { type: string, required: true }
+      clo_fragment:  { type: string, required: false }
+      build_type:    { type: string, required: true }   # stable | testing
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  build:
+    name: "${{ inputs.variant_name }}"
+    runs-on: ubuntu-latest
+    env:
+      WORK_DIR:   ${{ github.workspace }}
+      KERNEL_SRC: ${{ github.workspace }}/kernel_src
+
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 1
+
+      - name: "Install dependencies"
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            aria2 bc bison build-essential ccache flex \
+            git libelf-dev libssl-dev curl jq \
+            gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi \
+            dwarves
+
+      - name: "Restore Moto source cache"
+        id: moto-src-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.KERNEL_SRC }}
+          key: moto-source-lineage-23.2
+          restore-keys: moto-source-
+
+      - name: "Clone kernel source"
+        env:
+          SOURCE_TYPE:    ${{ inputs.source_type }}
+          MOTO_CACHE_HIT: ${{ steps.moto-src-cache.outputs.cache-hit }}
+        run: bash scripts/clone-source.sh
+
+      - name: "Save Moto source cache"
+        if: steps.moto-src-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.KERNEL_SRC }}
+          key: moto-source-lineage-23.2
+
+      - name: "Configure ccache"
+        if: inputs.build_type == 'stable'
+        run: |
+          echo "CCACHE_DIR=$HOME/.ccache"                                                                          >> $GITHUB_ENV
+          echo "CCACHE_MAXSIZE=2G"                                                                                 >> $GITHUB_ENV
+          echo "CCACHE_COMPILERCHECK=content"                                                                      >> $GITHUB_ENV
+          echo "CCACHE_DIRECT=true"                                                                                >> $GITHUB_ENV
+          echo "CCACHE_NOHASHDIR=true"                                                                             >> $GITHUB_ENV
+          echo "CCACHE_BASEDIR=${{ github.workspace }}"                                                            >> $GITHUB_ENV
+          echo "CCACHE_IGNOREOPTIONS=--sysroot*"                                                                   >> $GITHUB_ENV
+          echo "CCACHE_COMPRESSION=true"                                                                           >> $GITHUB_ENV
+          echo "CCACHE_COMPRESSLEVEL=3"                                                                            >> $GITHUB_ENV
+          echo "CCACHE_SLOPPINESS=file_macro,time_macros,include_file_mtime,include_file_ctime,pch_defines,system_headers,locale" >> $GITHUB_ENV
+
+      - name: "Restore ccache"
+        if: inputs.build_type == 'stable'
+        id: ccache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ inputs.source_type }}-${{ inputs.ksu_type }}-${{ hashFiles('sources/source-pins.json') }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            ccache-${{ inputs.source_type }}-${{ inputs.ksu_type }}-${{ hashFiles('sources/source-pins.json') }}-
+            ccache-${{ inputs.source_type }}-${{ inputs.ksu_type }}-
+
+      - name: "Setup toolchain"
+        run: bash scripts/setup-toolchain.sh
+
+
+      - name: "Setup BBG"
+        if: inputs.ksu_type != 'none'
+        working-directory: ${{ env.KERNEL_SRC }}
+        run: |
+          git clone -q --depth=1 https://github.com/vc-teahouse/Baseband-guard.git
+          ln -sf ../Baseband-guard security/baseband-guard
+          grep -q "baseband-guard" security/Makefile || \
+            echo 'obj-$(CONFIG_BBG) += baseband-guard/' >> security/Makefile
+          sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/selinux/selinux,baseband_guard/ } }' \
+            security/Kconfig
+          grep -q "baseband-guard/Kconfig" security/Kconfig || \
+            sed -i '/source "security\/keys\/Kconfig"/a source "security/baseband-guard/Kconfig"' \
+            security/Kconfig
+
+      - name: "Setup root integration"
+        if: inputs.ksu_type != 'none'
+        env:
+          KSU_TYPE:   ${{ inputs.ksu_type }}
+          KERNEL_DIR: ${{ env.KERNEL_SRC }}
+          WORK_DIR:   ${{ env.WORK_DIR }}
+        run: bash scripts/setup-ksu.sh
+
+      - name: "Kernel configs"
+        env:
+          KSU_TYPE:  ${{ inputs.ksu_type }}
+          DEFCONFIG: ${{ env.KERNEL_SRC }}/arch/arm64/configs/${{ inputs.defconfig }}
+        run: bash scripts/setup-configs.sh
+
+      - name: "Build kernel"
+        timeout-minutes: 50
+        env:
+          SOURCE_TYPE:  ${{ inputs.source_type }}
+          DEFCONFIG:    ${{ inputs.defconfig }}
+          CLO_FRAGMENT: ${{ inputs.clo_fragment }}
+        run: bash scripts/build.sh
+
+      - name: "Save ccache"
+        if: inputs.build_type == 'stable'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ inputs.source_type }}-${{ inputs.ksu_type }}-${{ hashFiles('sources/source-pins.json') }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: "Verify kernel"
+        run: bash scripts/verify-kernel.sh
+
+      - name: "Pack ZIP"
+        env:
+          KSU_TYPE:    ${{ inputs.ksu_type }}
+          SOURCE_TYPE: ${{ inputs.source_type }}
+        run: bash scripts/pack-zip.sh
+
+      - name: "Upload artifact"
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: |
+            ${{ env.WORK_DIR }}/${{ env.ZIP_NAME }}
+            ${{ env.WORK_DIR }}/out/dist/kernel_version.txt
+            ${{ env.WORK_DIR }}/kernel_hash.txt
+            ${{ env.WORK_DIR }}/ksun_version.txt
+            ${{ env.WORK_DIR }}/resuki_version.txt
+          retention-days: 1
