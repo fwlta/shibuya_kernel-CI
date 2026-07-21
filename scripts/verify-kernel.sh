@@ -28,7 +28,7 @@ fi
 VERSION_CLEAN=$(echo "$VERSION_FULL" | sed 's/Linux version //' | sed 's/ (.*//')
 KERNEL_HASH=$(cat "${WORK_DIR}/kernel_hash.txt")
 KERNEL_BASE_VERSION=$(make -s --no-print-directory -C "$KERNEL_SRC" kernelversion)
-EXPECTED_VERSION="${KERNEL_BASE_VERSION}:shibuya-purity/${KERNEL_HASH}"
+EXPECTED_VERSION="${KERNEL_BASE_VERSION}:Shibuya-rc1/${KERNEL_HASH}"
 [ "$VERSION_CLEAN" = "$EXPECTED_VERSION" ] || {
   echo "[ERROR] Unexpected kernel version: $VERSION_CLEAN"
   echo "[ERROR] Expected: $EXPECTED_VERSION"
