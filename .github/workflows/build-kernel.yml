@@ -42,7 +42,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ${{ env.KERNEL_SRC }}
-          key: moto-source-shibuya-rc1-5.15.211
+          key: moto-source-shibuya-rc1
           restore-keys: moto-source-
 
       - name: "Clone kernel source"
@@ -56,7 +56,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: ${{ env.KERNEL_SRC }}
-          key: moto-source-shibuya-rc1-5.15.211
+          key: moto-source-shibuya-rc1
 
       - name: "Configure ccache"
         if: inputs.build_type == 'stable'
