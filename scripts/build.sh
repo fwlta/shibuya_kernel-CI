@@ -112,7 +112,7 @@ KERNEL_HASH="$(cat "${WORK_DIR}/kernel_hash.txt")"
   echo "[ERROR] Invalid kernel hash: $KERNEL_HASH"
   exit 1
 }
-KERNEL_LOCALVERSION="-sm8550-shibuya-${KERNEL_HASH}"
+KERNEL_LOCALVERSION=":sm8550-shibuya/${KERNEL_HASH}"
 echo "[${SOURCE_TYPE^^}] Setting LocalVersion: ${KERNEL_LOCALVERSION}"
 ./scripts/config --file "${OUT_DIR}/dist/.config" \
   --set-str LOCALVERSION "${KERNEL_LOCALVERSION}" \
