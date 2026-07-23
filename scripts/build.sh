@@ -12,7 +12,7 @@ set -e
 OUT_DIR="${WORK_DIR}/out"
 START=$(date +%s)
 
-export KBUILD_BUILD_USER="${KBUILD_BUILD_USER:-alpine}"
+export KBUILD_BUILD_USER="${KBUILD_BUILD_USER:-root}"
 export KBUILD_BUILD_HOST="${KBUILD_BUILD_HOST:-fwlta}"
 export PATH="${CLANG_DIR}/bin:$PATH"
 # Use CONFIG_LOCALVERSION verbatim instead of adding an SCM suffix.
