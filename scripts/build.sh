@@ -119,6 +119,8 @@ echo "[${SOURCE_TYPE^^}] Setting LocalVersion: ${KERNEL_LOCALVERSION}"
   -d LOCALVERSION_AUTO
 make "${MAKE_FLAGS[@]}" olddefconfig
 
+./scripts/config --file "${OUT_DIR}/dist/.config" -e CONFIG_IP6_NF_NAT
+
 echo "[${SOURCE_TYPE^^}] Generating SELinux headers..."
 SELINUX_GENHEADERS="${OUT_DIR}/dist/genheaders"
 "${CLANG_DIR}/bin/clang" \
