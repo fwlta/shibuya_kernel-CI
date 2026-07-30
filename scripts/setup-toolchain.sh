@@ -4,8 +4,8 @@ set -e
 
 : "${WORK_DIR:=$GITHUB_WORKSPACE}"
 
-CLANG_VER="neutron-clang-30062026"
-CLANG_URL="https://github.com/Neutron-Toolchains/clang-build-catalogue/releases/download/30062026/${CLANG_VER}.tar.zst"
+CLANG_VER="neutron-clang-30072026"
+CLANG_URL="https://github.com/Neutron-Toolchains/clang-build-catalogue/releases/download/30072026/${CLANG_VER}.tar.zst"
 CLANG_DIR="${WORK_DIR}/prebuilts/clang/host/linux-x86/clang-${CLANG_VER}"
 
 mkdir -p "$CLANG_DIR"
