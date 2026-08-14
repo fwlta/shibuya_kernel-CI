@@ -8,7 +8,7 @@ on:
   workflow_call:
     inputs:
       zip_mode:   { type: string, required: true }   # per-variant | aio
-      build_type: { type: string, required: true }   # stable | testing
+      build_type: { type: string, required: true }   # stable
 
 permissions:
   contents: write

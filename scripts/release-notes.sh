@@ -2,7 +2,6 @@
 # release-notes.sh - generate release body
 set -e
 
-: "${BUILD_TYPE:-stable}"
 : "${RUN_URL:?}"
 : "${REPO:?}"
 : "${SHA:?}"
@@ -10,10 +9,6 @@ set -e
 SHORT_SHA="${SHA:0:9}"
 COMMIT_URL="https://github.com/${REPO}/commit/${SHA}"
 BODY=""
-
-if [ "$BUILD_TYPE" = "testing" ]; then
-  BODY="${BODY}Testing build. Use at your own risk."$'\n\n'
-fi
 
 BODY="${BODY}**Kernel:** \`${KERNEL_UNAME}\`"$'\n\n'
 

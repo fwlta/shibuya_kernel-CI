@@ -9,7 +9,7 @@ on:
       artifact_name: { type: string, required: true }
       defconfig:     { type: string, required: true }
       clo_fragment:  { type: string, required: false }
-      build_type:    { type: string, required: true }   # stable | testing
+      build_type:    { type: string, required: true }   # stable
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"

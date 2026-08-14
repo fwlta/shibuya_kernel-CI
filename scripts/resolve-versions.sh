@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 # resolve-versions.sh — read version info from artifacts + GitHub API
-# env: BUILD_TYPE, GITHUB_ENV (implicit)
+# env: GITHUB_ENV (implicit)
 set -e
-
-: "${BUILD_TYPE:-stable}"
 
 VERSION_FILE=$(find ./artifacts -name "kernel_version.txt" | head -1)
 KERNEL_VERSION=$([ -f "$VERSION_FILE" ] && cat "$VERSION_FILE" || echo "5.15.x")
@@ -15,12 +13,7 @@ RESUKI_VERSION=$([ -f "$_sv" ] && cat "$_sv" | tr -d '[:space:]' || echo "")
 
 RELEASE_TAG="shibuya-${GITHUB_RUN_NUMBER}"
 RELEASE_NAME="Shibuya Kernel #${GITHUB_RUN_NUMBER}"
-
-if [ "$BUILD_TYPE" = "testing" ]; then
-  IS_PRERELEASE="true"
-else
-  IS_PRERELEASE="false"
-fi
+IS_PRERELEASE="false"
 
 
 {
