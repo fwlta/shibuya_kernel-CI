@@ -12,7 +12,7 @@ case "$SOURCE_TYPE" in
 
   moto)
     MOTO_REPO="https://github.com/RtwoLab/kernel_motorola_sm8550"
-    MOTO_BRANCH="test-nomerge-nosuspects"
+    MOTO_BRANCH="test-bisect-a"
     if [ "${MOTO_CACHE_HIT}" = "true" ] && [ -d "$KERNEL_SRC/.git" ]; then
       echo "[Moto] Cache hit — fetching delta only..."
       for attempt in 1 2 3; do
