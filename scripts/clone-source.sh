@@ -11,8 +11,8 @@ mkdir -p "$KERNEL_SRC"
 case "$SOURCE_TYPE" in
 
   moto)
-    MOTO_REPO="https://github.com/RtwoLab/android_kernel_motorola_sm8550"
-    MOTO_BRANCH="16.0"
+    MOTO_REPO="https://github.com/RtwoLab/kernel_motorola_sm8550"
+    MOTO_BRANCH="16.2"
     if [ "${MOTO_CACHE_HIT}" = "true" ] && [ -d "$KERNEL_SRC/.git" ]; then
       echo "[Moto] Cache hit — fetching delta only..."
       for attempt in 1 2 3; do
