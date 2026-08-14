@@ -40,15 +40,6 @@ jobs:
           BUILD_TYPE: ${{ inputs.build_type }}
         run: bash scripts/pack-release.sh
 
-      - name: "Fetch manager APKs"
-        env:
-          GITHUB_TOKEN:              ${{ secrets.GITHUB_TOKEN }}
-          KSUN_MANAGER_ARTIFACT_ID:  ${{ env.KSUN_MANAGER_ARTIFACT_ID }}
-          RESUKI_MANAGER_ARTIFACT_ID:  ${{ env.RESUKI_MANAGER_ARTIFACT_ID }}
-          KSUN_VERSION:              ${{ env.KSUN_VERSION }}
-          RESUKI_VERSION:              ${{ env.RESUKI_VERSION }}
-        run: bash scripts/fetch-manager-apks.sh
-
       - name: "Generate release notes"
         env:
           BUILD_TYPE:  ${{ inputs.build_type }}
@@ -65,7 +56,6 @@ jobs:
           overwrite: true
           files: |
             ./release_zips/*.zip
-            ./manager_apks/*.apk
           tag_name:   ${{ env.RELEASE_TAG }}
           name:       ${{ env.RELEASE_NAME }}
           prerelease: ${{ env.IS_PRERELEASE }}
@@ -85,20 +75,10 @@ jobs:
             [ -f "$zip" ] || continue
             filename="$(basename "$zip")"
             sha256="$(sha256sum "$zip" | cut -d' ' -f1)"
-            case "$filename" in
-              *-ksun-susfs.zip) variant="KSU-Next + SUSFS" ;;
-              *-resuki-susfs.zip) variant="ReSukiSU + SUSFS" ;;
-              *-ksun.zip)  variant="KSU-Next" ;;
-              *-resuki.zip)  variant="ReSukiSU" ;;
-              *-noksu.zip) variant="NoKSU" ;;
-              *KSU-Next*SUSFS*) variant="KSU-Next + SUSFS" ;;
-              *ReSukiSU*SUSFS*) variant="ReSukiSU + SUSFS" ;;
-              *KSU-Next*) variant="KSU-Next" ;;
-              *ReSukiSU*) variant="ReSukiSU" ;;
-              *NoKSU*)    variant="NoKSU" ;;
-              *)          variant="Kernel" ;;
-            esac
-            caption="$(printf "<b>Download Shibuya-Kernel-%s #%s</b>\n\n<blockquote>[ ] Test</blockquote>\n\nSHA256: <code>%s</code>" "$variant" "$GITHUB_RUN_NUMBER" "$sha256")"
+            hash="${filename#Shibuya-}"
+            hash="${hash%%-*}"
+            build_date="$(date '+%d/%m/%Y')"
+            caption="$(printf "<b>Shibuya Kernel for Rtwo</b>\n\n- LocalVersion: -Shibuya-rc1-%s\n- Clang: Neutron Clang 30072026\n- Build Date: %s\n- Commit hash: <code>%s</code>\n- Compatibility State: AOSP/Stock\n- Manager: KowSu\n- SuSFS: Non-Supported" "$hash" "$build_date" "$hash")"
             curl --fail --silent --show-error --retry 3 \
               --output /dev/null \
               --form "chat_id=${TELEGRAM_CHAT_ID}" \

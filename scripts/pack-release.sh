@@ -30,13 +30,10 @@ if [ "$ZIP_MODE" = "aio" ] || [ "$ZIP_MODE" = "both" ]; then
     [ -f "$ARTIFACT_ZIP" ] || continue
 
     # Derive named image from artifact dir name
-    # artifact dirs: moto-ksun, moto-ksun-susfs, moto-resuki, moto-resuki-susfs, moto-noksu
+    # artifact dirs: moto-resuki, moto-noksu
     DIR_NAME=$(basename "$ARTIFACT_DIR")
     case "$DIR_NAME" in
-      moto-ksun) IMG_NAME="Image.moto.ksu" ;;
-      moto-ksun-susfs) IMG_NAME="Image.moto.ksu.susfs" ;;
       moto-resuki) IMG_NAME="Image.moto.resuki" ;;
-      moto-resuki-susfs) IMG_NAME="Image.moto.resuki.susfs" ;;
       moto-noksu) IMG_NAME="Image.moto.noksu" ;;
       *)          IMG_NAME="Image.${DIR_NAME}" ;;
     esac

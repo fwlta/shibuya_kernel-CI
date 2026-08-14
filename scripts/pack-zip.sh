@@ -15,10 +15,7 @@ IMAGE="${WORK_DIR}/out/dist/Image"
 : "${KERNEL_HASH:?}"
 
 case "${KSU_TYPE}" in
-  ksun) ZIP_VARIANT="ksun" ;;
-  ksun-susfs) ZIP_VARIANT="ksun-susfs" ;;
   resuki) ZIP_VARIANT="resuki" ;;
-  resuki-susfs) ZIP_VARIANT="resuki-susfs" ;;
   none) ZIP_VARIANT="noksu" ;;
   *)    echo "[ERROR] Unknown KSU type: ${KSU_TYPE}"; exit 1 ;;
 esac

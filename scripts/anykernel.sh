@@ -26,19 +26,13 @@ PATCH_VBMETA_FLAG=auto;
 
 . tools/ak3-core.sh;
 
-HAS_KSU=0;
-HAS_KSU_SUSFS=0;
 HAS_RESUKI=0;
-HAS_RESUKI_SUSFS=0;
 HAS_NOKSU=0;
 
-[ -f "$AKHOME/Image.moto.ksu" ] && HAS_KSU=1;
-[ -f "$AKHOME/Image.moto.ksu.susfs" ] && HAS_KSU_SUSFS=1;
 [ -f "$AKHOME/Image.moto.resuki" ] && HAS_RESUKI=1;
-[ -f "$AKHOME/Image.moto.resuki.susfs" ] && HAS_RESUKI_SUSFS=1;
 [ -f "$AKHOME/Image.moto.noksu" ] && HAS_NOKSU=1;
 
-TOTAL=$((HAS_KSU + HAS_KSU_SUSFS + HAS_RESUKI + HAS_RESUKI_SUSFS + HAS_NOKSU));
+TOTAL=$((HAS_RESUKI + HAS_NOKSU));
 SELECTED_IMAGE="";
 
 flush_keys() { sleep 0.15; }
@@ -51,10 +45,7 @@ if [ "$TOTAL" -gt 1 ]; then
   print_menu() {
     I=0;
     [ "$HAS_NOKSU" = "1" ] && { I=$((I+1)); [ "$OPTION" = "$I" ] && ui_print "> NoKSU" || ui_print "  NoKSU"; }
-    [ "$HAS_KSU" = "1" ] && { I=$((I+1)); [ "$OPTION" = "$I" ] && ui_print "> KSU-Next" || ui_print "  KSU-Next"; }
-    [ "$HAS_KSU_SUSFS" = "1" ] && { I=$((I+1)); [ "$OPTION" = "$I" ] && ui_print "> KSU-Next + SUSFS" || ui_print "  KSU-Next + SUSFS"; }
     [ "$HAS_RESUKI" = "1" ] && { I=$((I+1)); [ "$OPTION" = "$I" ] && ui_print "> ReSukiSU" || ui_print "  ReSukiSU"; }
-    [ "$HAS_RESUKI_SUSFS" = "1" ] && { I=$((I+1)); [ "$OPTION" = "$I" ] && ui_print "> ReSukiSU + SUSFS" || ui_print "  ReSukiSU + SUSFS"; }
   }
 
   print_menu;
@@ -77,16 +68,10 @@ if [ "$TOTAL" -gt 1 ]; then
 
   I=0;
   [ "$HAS_NOKSU" = "1" ] && { I=$((I+1)); [ "$OPTION" = "$I" ] && SELECTED_IMAGE="Image.moto.noksu"; }
-  [ "$HAS_KSU" = "1" ] && { I=$((I+1)); [ "$OPTION" = "$I" ] && SELECTED_IMAGE="Image.moto.ksu"; }
-  [ "$HAS_KSU_SUSFS" = "1" ] && { I=$((I+1)); [ "$OPTION" = "$I" ] && SELECTED_IMAGE="Image.moto.ksu.susfs"; }
   [ "$HAS_RESUKI" = "1" ] && { I=$((I+1)); [ "$OPTION" = "$I" ] && SELECTED_IMAGE="Image.moto.resuki"; }
-  [ "$HAS_RESUKI_SUSFS" = "1" ] && { I=$((I+1)); [ "$OPTION" = "$I" ] && SELECTED_IMAGE="Image.moto.resuki.susfs"; }
 
 elif [ "$HAS_NOKSU" = "1" ]; then SELECTED_IMAGE="Image.moto.noksu";
-elif [ "$HAS_KSU" = "1" ]; then SELECTED_IMAGE="Image.moto.ksu";
-elif [ "$HAS_KSU_SUSFS" = "1" ]; then SELECTED_IMAGE="Image.moto.ksu.susfs";
 elif [ "$HAS_RESUKI" = "1" ]; then SELECTED_IMAGE="Image.moto.resuki";
-elif [ "$HAS_RESUKI_SUSFS" = "1" ]; then SELECTED_IMAGE="Image.moto.resuki.susfs";
 elif [ -f "$AKHOME/Image" ]; then :;
 else
   ui_print "error: kernel image not found";

@@ -14,10 +14,7 @@ on:
         type: choice
         options:
           - all
-          - KSU-Next
-          - KSU-Next + SUSFS
           - ReSukiSU
-          - ReSukiSU + SUSFS
           - NoKSU
         default: all
       zip_mode:
@@ -46,19 +43,13 @@ jobs:
         env:
           SELECTED_VARIANT: ${{ inputs.variant || 'all' }}
         run: |
-          ksun='{"name":"Moto KSU-Next","source":"moto","ksu":"ksun","artifact":"moto-ksun","defconfig":"gki_defconfig","clo_fragment":"vendor/kalama_GKI.config"}'
-          ksun_susfs='{"name":"Moto KSU-Next + SUSFS","source":"moto","ksu":"ksun-susfs","artifact":"moto-ksun-susfs","defconfig":"gki_defconfig","clo_fragment":"vendor/kalama_GKI.config"}'
           resuki='{"name":"Moto ReSukiSU","source":"moto","ksu":"resuki","artifact":"moto-resuki","defconfig":"gki_defconfig","clo_fragment":"vendor/kalama_GKI.config"}'
-          resuki_susfs='{"name":"Moto ReSukiSU + SUSFS","source":"moto","ksu":"resuki-susfs","artifact":"moto-resuki-susfs","defconfig":"gki_defconfig","clo_fragment":"vendor/kalama_GKI.config"}'
           noksu='{"name":"Moto NoKSU","source":"moto","ksu":"none","artifact":"moto-noksu","defconfig":"gki_defconfig","clo_fragment":"vendor/kalama_GKI.config"}'
 
           case "$SELECTED_VARIANT" in
-            KSU-Next)           variants="[$ksun]" ;;
-            "KSU-Next + SUSFS") variants="[$ksun_susfs]" ;;
             ReSukiSU)            variants="[$resuki]" ;;
-            "ReSukiSU + SUSFS") variants="[$resuki_susfs]" ;;
             NoKSU)               variants="[$noksu]" ;;
-            all)                 variants="[$ksun,$ksun_susfs,$resuki,$resuki_susfs,$noksu]" ;;
+            all)                 variants="[$resuki,$noksu]" ;;
             *)         echo "Unknown variant: $SELECTED_VARIANT" >&2; exit 1 ;;
           esac
 

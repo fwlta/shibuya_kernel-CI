@@ -5,7 +5,7 @@ on:
     inputs:
       variant_name:  { type: string, required: true }
       source_type:   { type: string, required: true }   # moto
-      ksu_type:      { type: string, required: true }   # ksun | ksun-susfs | resuki | resuki-susfs | none
+      ksu_type:      { type: string, required: true }   # resuki | none
       artifact_name: { type: string, required: true }
       defconfig:     { type: string, required: true }
       clo_fragment:  { type: string, required: false }
@@ -147,6 +147,5 @@ jobs:
             ${{ env.WORK_DIR }}/${{ env.ZIP_NAME }}
             ${{ env.WORK_DIR }}/out/dist/kernel_version.txt
             ${{ env.WORK_DIR }}/kernel_hash.txt
-            ${{ env.WORK_DIR }}/ksun_version.txt
             ${{ env.WORK_DIR }}/resuki_version.txt
           retention-days: 1
