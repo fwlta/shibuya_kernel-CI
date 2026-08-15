@@ -78,7 +78,7 @@ jobs:
             hash="${filename#Shibuya-}"
             hash="${hash%%-*}"
             build_date="$(date '+%d/%m/%Y')"
-            caption="$(printf "<b>Shibuya Kernel for Rtwo</b>\n\n- LocalVersion: -Shibuya-rc1-%s\n- Clang: Neutron Clang 30072026\n- Build Date: %s\n- Commit hash: <code>%s</code>\n- Compatibility State: AOSP/Stock\n- Manager: <a href=\"https://t.me/kowsu_build\">KowSu</a>\n- SuSFS: Non-Supported" "$hash" "$build_date" "$hash")"
+            caption="$(printf "<b>Shibuya Kernel for Rtwo</b>\n\n- LocalVersion: :shibuya-rc1/%s\n- Clang: Neutron Clang 30072026\n- Build Date: %s\n- Commit hash: <code>%s</code>\n- Compatibility State: AOSP/Stock\n- Manager: <a href=\"https://t.me/kowsu_build\">KowSu</a>\n- SuSFS: Non-Supported" "$hash" "$build_date" "$hash")"
             curl --fail --silent --show-error --retry 3 \
               --output /dev/null \
               --form "chat_id=${TELEGRAM_CHAT_ID}" \
